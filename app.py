@@ -33,9 +33,10 @@ Exemplo: 1,3,4
             '5': 'cityByState'
         }
         values_selectedStr = list(values.replace(',', ''))
+        values_selectedStr_sorted = sorted(values_selectedStr, key=lambda x: int(x))
         # Verifica se o valor selecionado é válido 
         if all(value in listValues for value in values_selectedStr):
-            self.filtredValue = {key: value for key, value in listValues.items() if key in values_selectedStr}
+            self.filtredValue = {key: value for key, value in listValues.items() if key in values_selectedStr_sorted}
             return True
         else:
             return False
@@ -206,11 +207,16 @@ def create_excel_file(values ,amount):
     sheet.title = "Random Data"
 
     headers = []
-    headers.append(('name' if 'names' in values.values() else '' , 
-                     'email' if 'emails' in values.values() else '', 
-                     'phone' if 'telephone' in values.values() else '', 
-                     'state' if 'state' in values.values() else '', 
-                     'city' if 'cityByState' in values.values() else ''))
+    if 'names' in values.values():
+        headers.append('Name')
+    if 'emails' in values.values():
+        headers.append('Emails')
+    if 'telephone' in values.values():
+        headers.append('Telephone')
+    if 'state' in values.values():
+        headers.append('State')
+    if 'cityByState' in values.values():
+        headers.append('City')
     for col, header in enumerate(headers, start=1):
         sheet.cell(row=1, column=col, value=header)
 
@@ -240,7 +246,7 @@ multipla escolha, separe cada valor com uma ","(virgula), sem a necessidade de e
 
     while True:
         try:
-            startingApp = str(input('Deseja inciar o gerador de dados falso?  não/sim \n'))
+            startingApp = str(input('Deseja inciar o gerador de dados falso?  não(encerra o programa)/sim \n'))
             if startingApp == 'não' or startingApp == "nao":
                 return False
             elif startingApp == 'sim':
@@ -257,10 +263,7 @@ multipla escolha, separe cada valor com uma ","(virgula), sem a necessidade de e
                     generate_data_json(questions['values'], questions['amount'])
             else:
                 print('Digite um valor válido')
-        except sqlite3.Error as error:
-            print(error)
-        except NameError as error:
-            print(error)
+        except:
             print('Digite um valor válido')  
 
         
