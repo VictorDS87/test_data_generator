@@ -247,6 +247,7 @@ multipla escolha, separe cada valor com uma ","(virgula), sem a necessidade de e
     while True:
         try:
             startingApp = str(input('Deseja inciar o gerador de dados falso?  não(encerra o programa)/sim \n'))
+            os.system('cls')
             if startingApp == 'não' or startingApp == "nao":
                 return False
             elif startingApp == 'sim':
