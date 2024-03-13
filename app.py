@@ -24,6 +24,8 @@ Informe os valores que deseja gerar
 5 - Cidade
 Exemplo: 1,3,4
 '''))  
+        if values == '':
+            values = ['12345']
         # Converter a resposta para uma lista de string com os valores selecionados
         listValues = {
             '1': 'names',
@@ -47,7 +49,9 @@ Você deseja salvar os dados gerados onde?
 2 - db(sqlite3)
 3 - xlsx
 4 - JSON
-'''))
+'''))   
+        if self.fileType == '':
+            self.fileType = 4
         # Converte a resposta para uma lista de valores, logo após verifica se o valor escolhido é valido 
         listFileType = {
             1: 'txt',
@@ -63,6 +67,8 @@ Você deseja salvar os dados gerados onde?
             return False
     def amount_selected(self):
         self.amount = int(input('Quantos dados devem ser gerados? obs: Quanto maior a quantidade mais tempo levará\n'))   
+        if self.amount < 0:
+            self.amount = 15
     def return_data(self):
         data = {
         'values': self.filtredValue,
@@ -82,6 +88,8 @@ class createTableSqlite3:
     def db_connect(self):
         #  cria o arquivo data.db e conecta ao banco
         self.db_name = str(input('Qual o nome do banco de dados?\n'))
+        if self.db_name == '':
+            self.db_name = 'generic'
         self.connection = sqlite3.connect('data.db')
         return self.connection   
     def create_table(self, values):
@@ -235,9 +243,7 @@ def main():
     #  Print de apresentação do programa
     print('''
 Olá, seja bem vindo ao gerador de dados para teste. Adiante serão
-feitas algumas perguntas para que o gerador funcione de acordo com o seu objetivo.
-Todas as perguntas tem um valor padrão definido, então caso seja enviado
-uma resposta em branco o valor será preenchido para o padrão. No caso de perguntas que permitem
+feitas algumas perguntas para que o gerador funcione de acordo com o seu objetivo. No caso de perguntas que permitem
 multipla escolha, separe cada valor com uma ","(virgula), sem a necessidade de espaço após a ","(virgula)''')
     
     #  Variables
