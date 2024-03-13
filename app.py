@@ -1,19 +1,20 @@
 import os 
-
+import openpyxl
+import sqlite3
 import json
 import random
 from values.values import names, emails, telephone, cityByState, state
 from time import sleep
 
-class questionsToGenerateData():
+class questionsToGenerateData:
     # Faz as perguntas e retorna o valor e confere se o valor é valido
     # No fim retorna um dicionario com os valores 
     def __init__(self):
-        if not self.valuesSelected() or not self.filetypeSelected() or not self.amountSelected():
+        if not self.values_selected() or not self.file_type_selected() or not self.amount_selected():
             return  # Sai do método __init__ e interrompe a execução do programa
 
-        self.returnData()
-    def valuesSelected(self):
+        self.return_data()
+    def values_selected(self):
         values = str(input('''
 Informe os valores que deseja gerar
 1 - Nome
@@ -31,15 +32,14 @@ Exemplo: 1,3,4
             '4': 'state',
             '5': 'cityByState'
         }
-        valuesSelectedStr = list(values.replace(',', ''))
+        values_selectedStr = list(values.replace(',', ''))
         # Verifica se o valor selecionado é válido 
-        if all(value in listValues for value in valuesSelectedStr):
-            self.filtredValue = {key: value for key, value in listValues.items() if key in valuesSelectedStr}
+        if all(value in listValues for value in values_selectedStr):
+            self.filtredValue = {key: value for key, value in listValues.items() if key in values_selectedStr}
             return True
         else:
-            print('deu false mas n pa')
             return False
-    def filetypeSelected(self):
+    def file_type_selected(self):
         self.fileType = int(input('''
 Você deseja salvar os dados gerados onde?
 1 - txt
@@ -60,18 +60,93 @@ Você deseja salvar os dados gerados onde?
             return filtredValue
         else:
             return False
-    def amountSelected(self):
+    def amount_selected(self):
         self.amount = int(input('Quantos dados devem ser gerados? obs: Quanto maior a quantidade mais tempo levará\n'))   
-    def returnData(self):
+    def return_data(self):
         data = {
         'values': self.filtredValue,
         'fileType': self.fileType,
         'amount': self.amount
         }
-        print(data)
         return data
     
-def generateDataJsonTxt(values, amount):
+class createTableSqlite3:
+    # Responsavel pela logica de criação do banco de dado, tornando dinamico com base
+    # nas opções escolhidas
+    def __init__(self, values, amount):
+        self.db_connect()
+        self.create_table(values)
+        self.fill_table(values, amount)
+        pass
+    def db_connect(self):
+        #  cria o arquivo data.db e conecta ao banco
+        self.db_name = str(input('Qual o nome do banco de dados?\n'))
+        self.connection = sqlite3.connect('data.db')
+        return self.connection   
+    def create_table(self, values):
+        # Cria as tabelas com base nos valores escolhidos anteriormente
+        self.cursor = self.connection.cursor()
+        # Usar um if dentro para preecher a tabela de forma dinamica
+        columns = ['id INTEGER PRIMARY KEY']
+        self.columnsString = ['id']
+        if 'names' in values.values():
+            columns.append('name TEXT NOT NULL')
+            self.columnsString.append('name')
+        if 'emails' in values.values():
+            columns.append('email TEXT NOT NULL')
+            self.columnsString.append('email')
+        if 'telephone' in values.values():
+            columns.append('telephone TEXT NOT NULL')
+            self.columnsString.append('telephone')
+        if 'state' in values.values():
+            columns.append('state TEXT NOT NULL')
+            self.columnsString.append('state')
+        if 'cityByState' in values.values():
+            columns.append('city TEXT NOT NULL')
+            self.columnsString.append('city')
+
+        self.cursor.execute(f'''
+            CREATE TABLE {self.db_name} (
+                {', '.join(columns)}
+            );
+        ''')
+        self.connection.commit()   
+    def fill_table(self, values, amount):
+        # Preenche a tabela com valores aleatorios
+        id = 0    
+        for _ in range(amount):
+            for value in values.values():
+                id += 1
+                if value == 'names':
+                    name = random.choice(names)
+                elif value == 'telephone':
+                    self.telephone = random.choice(telephone)
+                elif value == 'emails':
+                    email = random.choice(emails)
+                elif value == 'state':
+                    self.state = random.choice(state)
+                elif value == 'cityByState':
+                    if 'state' in values.values():
+                        city=(random.choice(cityByState[self.state]))
+                    else:
+                        city=(random.choice(cityByState[random.choice(state)]))
+            # Pega todos os valores e armazena em uma lista, para então passar os valores
+            # Como uma tupla ao banco de dados
+            valores = [id]
+            valores.append(name) if name else None
+            valores.append(self.telephone) if self.telephone else None
+            valores.append(email) if email else None
+            valores.append(self.state) if self.state else None
+            valores.append(city) if city else None
+            print(len(valores))
+            # Preenche com '?' para o número correto de placeholders
+            placeholders = ', '.join(['?' for _ in range(len(valores))])
+            self.cursor.execute(f'insert into {self.db_name} values({placeholders})', tuple(valores))
+        # Encerra a operação
+        self.connection.commit()
+        self.connection.close()
+
+def generate_data_json_txt(values, amount):
     # Pega o valor e a quantidade desejada, fazendo o tratamento dos dados e deixando em um formato que facilite
     # A visualização
     listData = []
@@ -95,23 +170,60 @@ def generateDataJsonTxt(values, amount):
                     dictData['city']=(random.choice(cityByState[random.choice(state)]))
         listData.append(dictData)          
     return listData 
-def generateDataTXT(values, amount):
-    data = generateDataJsonTxt(values, amount)
+def generate_data_txt(values, amount):
+    data = generate_data_json_txt(values, amount)
     with open('data.txt', 'a', newline='', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
-def generateDataJson(values, amount):
-    data = generateDataJsonTxt(values, amount)
+def generate_data_json(values, amount):
+    data = generate_data_json_txt(values, amount)
     with open('data.json', 'a', newline='', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-def generateDataDB(values, amount):
-    print('db')
-def generateDataXlsx(values, amount):
-    print('xlsx')
+def generate_data_db(values, amount):
+    createTableSqlite3(values, amount)
 
 
+def generate_random_data(values, amount):
+    data = []
+    print(values.values())
+    for _ in range(amount):
+        name = random.choice(names)
+        email = random.choice(emails)
+        phone = random.choice(telephone)
+        state_choice = random.choice(state)
+        city = random.choice(cityByState[state_choice])
+        data.append((name if 'names' in values.values() else None , 
+                     email if 'emails' in values.values() else None, 
+                     phone if 'telephone' in values.values() else None, 
+                     state_choice if 'state' in values.values() else None, 
+                     city if 'cityByState' in values.values() else None))
 
+    return data
 
+def create_excel_file(values ,amount):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Random Data"
+
+    headers = []
+    headers.append(('name' if 'names' in values.values() else '' , 
+                     'email' if 'emails' in values.values() else '', 
+                     'phone' if 'telephone' in values.values() else '', 
+                     'state' if 'state' in values.values() else '', 
+                     'city' if 'cityByState' in values.values() else ''))
+    for col, header in enumerate(headers, start=1):
+        sheet.cell(row=1, column=col, value=header)
+
+    random_data = generate_random_data(values, amount)
+    for row, row_data in enumerate(random_data, start=2):
+        for col, value in enumerate(row_data, start=1):
+            sheet.cell(row=row, column=col, value=value)
+
+    workbook.save('data.xlsx')
+
+def generate_data_xlsx(values, amount):
+    create_excel_file(values, amount)
+    
 
 def main():
     #  Print de apresentação do programa
@@ -133,19 +245,23 @@ multipla escolha, separe cada valor com uma ","(virgula), sem a necessidade de e
                 return False
             elif startingApp == 'sim':
                 #  Pegar os valores para gerar o conteúdo        
-                questions = questionsToGenerateData().returnData()
+                questions = questionsToGenerateData().return_data()
                 # Gerar os dados no arquivo escolhido
                 if questions['fileType'] == 1:
-                    generateDataTXT(questions['values'], questions['amount'])
+                    generate_data_txt(questions['values'], questions['amount'])
                 elif questions['fileType'] == 2:
-                    generateDataDB(questions['values'], questions['amount'])
+                    generate_data_db(questions['values'], questions['amount'])
                 elif questions['fileType'] == 3:
-                    generateDataXlsx(questions['values'], questions['amount'])
+                    generate_data_xlsx(questions['values'], questions['amount'])
                 elif questions['fileType'] == 4:
-                    generateDataJson(questions['values'], questions['amount'])
+                    generate_data_json(questions['values'], questions['amount'])
             else:
                 print('Digite um valor válido')
-        except:
-            print('Digite um valor válido')    
+        except sqlite3.Error as error:
+            print(error)
+        except NameError as error:
+            print(error)
+            print('Digite um valor válido')  
+
         
 main()
